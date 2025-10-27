@@ -1,0 +1,6 @@
+# HANDBOOK.yaml
+title: The JavaScript Handbook
+author: Predrag Milanović
+version: 1.0
+
+# All markdown files in docs/ and subdirectories will be automatically included

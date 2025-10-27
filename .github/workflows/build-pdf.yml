@@ -1,0 +1,66 @@
+name: Build PDF
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pandoc + LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra python3-yaml
+
+      - name: Build PDF
+        run: |
+          mkdir -p dist
+          python3 -c "
+          import yaml
+          import subprocess
+          import glob
+          import os
+          
+          with open('HANDBOOK.yaml') as f:
+              cfg = yaml.safe_load(f)
+          
+          # Auto-discover all markdown files in docs/ and subdirectories
+          all_files = []
+          all_files.extend(sorted(glob.glob('docs/*.md')))
+          for subdir in sorted(glob.glob('docs/*/')):
+              all_files.extend(sorted(glob.glob(os.path.join(subdir, '*.md'))))
+          
+          cmd = [
+              'pandoc',
+              '-V', 'geometry:margin=1in',
+              '-M', f'title={cfg[\"title\"]}',
+              '-M', f'author={cfg[\"author\"]}',
+              '-o', 'dist/the-javascript-handbook.pdf'
+          ] + all_files
+          
+          print('Including files:', all_files)
+          subprocess.run(cmd, check=True)
+          "
+
+      - name: Upload artifact (PDF)
+        uses: actions/upload-artifact@v4
+        with:
+          name: the-javascript-handbook-pdf
+          path: dist/the-javascript-handbook.pdf
+          retention-days: 30
+
+      - name: Commit PDF back to repo
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          if [ -n "$(git status --porcelain dist/the-javascript-handbook.pdf 2>/dev/null)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add dist/the-javascript-handbook.pdf
+            git commit -m "chore(pdf): update the-javascript-handbook.pdf"
+            git push
+          fi

@@ -20,7 +20,7 @@ jobs:
       - name: Build PDF
         run: |
           mkdir -p dist
-          python3 -c "
+          python3 << 'EOF'
           import yaml
           import subprocess
           import glob
@@ -38,14 +38,14 @@ jobs:
           cmd = [
               'pandoc',
               '-V', 'geometry:margin=1in',
-              '-M', f'title={cfg[\"title\"]}',
-              '-M', f'author={cfg[\"author\"]}',
+              '-M', f'title={cfg["title"]}',
+              '-M', f'author={cfg["author"]}',
               '-o', 'dist/the-javascript-handbook.pdf'
           ] + all_files
           
           print('Including files:', all_files)
           subprocess.run(cmd, check=True)
-          "
+          EOF
 
       - name: Upload artifact (PDF)
         uses: actions/upload-artifact@v4
